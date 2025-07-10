@@ -1,0 +1,9 @@
+OPEN https://locahost:8000/bla
+ISOLATE #ISOLATE_ELEMENT
+  CLIK #modal-button
+  FILL [name="username"] root
+  SELECT [name="location"] 1 
+  CLIK [type="submit"]
+EXIT
+
+CLOSE
