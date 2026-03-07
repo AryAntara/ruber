@@ -1,0 +1,28 @@
+-- importing modules 
+use something.group.login => resolve login in directory grub and something
+
+-- defining modules; 
+define something.group.login => /something/grub/leave 
+
+-- basic of browser and js features 
+go to url 
+fill element 'selector' with anom1 
+click element 'selector'
+trigger 'ev_name' in element 'selector'
+wait for 'time' seconds|minutes|hours|ms
+
+-- while
+repeat when {expression}
+start point 
+click element "a"
+done 
+
+
+-- call other module 
+do things in login -> for others module defines, and open block
+--
+
+-- flow is function
+define flow login with name, selector, query
+end of flow 
+-- when is if or if else, and otherwise is else, running if others not matched
