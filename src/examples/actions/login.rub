@@ -1,0 +1,8 @@
+create flow login
+    go to http://localhost
+    fill element "[name='email']" with "superadmin@neomr.id"
+    fill element "[name='password']" with "12345"
+    click element ".kt-btn-primary"
+    wait for '3' seconds
+    go to http://localhost/admin/registration/new-patient?step=1
+stop

@@ -4,22 +4,29 @@ WHITESPACE = _{ " " | "\t" }
 // Tipe data dasar
 String          = @{ "'" ~ (!"'" ~ ANY)* ~ "'" | "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
 Number          = @{ ASCII_DIGIT+ }
-Url             = @{ (!NEWLINE ~ ANY)+ } 
+Url             = @{ (!NEWLINE ~ ANY)+ }
 Ident           = @{ (ASCII_ALPHANUMERIC | "@" | "_" | "-")+ ~ ("." ~ (ASCII_ALPHANUMERIC | "@" | "_" | "-")+)* }
 KindOfTime      = { "seconds" | "minutes" | "hours" | "ms" }
 KindOfHTMLEvent = { "change"|"mouseenter"|"click" }
 
+// Mengabaikan komentar yang diawali dengan "--" sampai akhir baris
+COMMENT = _{ "--" ~ (!NEWLINE ~ ANY)* }
+
 // Perintah-perintah Browser (Sesuai contohmu)
 CmdGoto  = { "go to" ~ Url }
 CmdClick = { "click element" ~ String }
-CmdFill  = { "fill element" ~ String ~ "with" ~ Ident }
+CmdFill  = { "fill element" ~ String ~ "with" ~ String }
 CmdWait  = { "wait for" ~ String ~ KindOfTime }
 CmdTriggerEvent = { "trigger" ~ KindOfHTMLEvent ~ "from" ~ String }
-CmdModuleCreation = { "define" ~ ASCII_ALPHA+ ~ NEWLINE ~ (command ~ NEWLINE*)* ~ "end of module" }
-
+CmdFlowCreation = { "create flow" ~ ASCII_ALPHA+ ~ NEWLINE ~ (command ~ NEWLINE*)* ~ "stop" }
+CmdCallFlow = { "using flow" ~ ASCII_ALPHA+  }
+CmdSelectFirst = { "select first option for" ~ String }
+CmdHangup = { "hang up" }
+CmdIncludeFile = {"include" ~ String}
+CmdPressKey = { "press key" ~ String }
 
 // Daftar semua command yang valid
-command = { CmdGoto | CmdClick | CmdFill | CmdWait | CmdTriggerEvent | CmdModuleCreation }
+command = { CmdGoto | CmdClick | CmdFill | CmdWait | CmdTriggerEvent | CmdFlowCreation | CmdCallFlow | CmdSelectFirst | CmdHangup | CmdPressKey | CmdIncludeFile }
 
 // Sebuah file script terdiri dari banyak command, dipisahkan oleh baris baru
 script = { SOI ~ (command ~ NEWLINE*)* ~ EOI }

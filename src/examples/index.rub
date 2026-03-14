@@ -1,0 +1,15 @@
+create flow simple 
+    go to https://google.com  
+    click element "#APjFqb"    
+    
+    create flow simply
+        go to https://google.com      
+        click element "#APjFqb"       
+        hang up
+    stop
+
+    using flow simply
+stop
+
+using flow simple
+using flow simply

@@ -1,0 +1,50 @@
+go to http://localhost
+fill element "[name='email']" with "superadmin@neomr.id"
+fill element "[name='password']" with "12345"
+click element ".kt-btn-primary"
+wait for '3' seconds
+go to http://localhost/admin/registration/new-patient?step=1
+
+fill element '[name="ktp_no"]' with '7324062109040002'
+click element "#check-bpjs-btn"
+fill element '[name="name"]' with 'Budi Santoso'
+fill element '[name="place_of_birth"]' with 'Jakarta'
+fill element '[name="date_of_birth"]' with '15-08-1990'
+fill element '[name="gender"]' with 'Laki-Laki'
+fill element '[name="region"]' with 'SG'
+fill element '[name="nomor_paspor"]' with 'A1234567'
+fill element '[name="nomor_kitas"]' with '2C21GA2132'
+
+select first option for '#payment-method'
+fill element '[name="payment_method_item_uuid"]' with 'uuid-item-456'
+fill element '[name="insurance_policy_number"]' with 'POL-987654321'
+fill element '[name="bpjs_no"]' with '0001234567890'
+fill element '[name="phone_number"]' with '081234567890'
+fill element '[name="email"]' with 'budi.santoso@example.com'
+fill element '[name="patient_pic_name"]' with 'Siti Aminah'
+fill element '[name="patient_pic_contact"]' with '081987654321'
+fill element '[name="address"]' with 'Jl. Merdeka Raya No. 10, Blok B'
+
+-- 1. Klik area "Display" dari dropdown khusus Desa untuk membukanya
+click element '#village_code + .kt-select-wrapper .kt-select-display'
+
+-- 2. Tunggu sebentar sampai kotak pencariannya muncul (animasi selesai)
+wait for '1' seconds
+
+-- 3. Ketik nama desa di kotak input yang ada di dalam wrapper desa tersebut
+fill element '#village_code + .kt-select-wrapper .kt-input' with 'Sibang'
+
+-- 4. Tunggu API mengambil data dari server (karena ini remote)
+wait for '2' seconds
+
+-- 5. Klik hasil pencarian pertama (elemen <li>) di dalam daftar opsinya
+click element '#village_code + .kt-select-wrapper .kt-select-options li'
+
+fill element '[name="postal_code"]' with '12345'
+fill element '[name="origin_address"]' with 'Jl. Diponegoro No. 45'
+fill element '#origin_province_code' with '32'
+fill element '#origin_city_code' with '3273'
+fill element '#origin_district_code' with '327301'
+fill element '#origin_village_code' with '3273011002'
+
+hang up

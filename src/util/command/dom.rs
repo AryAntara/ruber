@@ -7,7 +7,7 @@ pub async fn click(page: &Client, selector: String) {
         )
         .await
     {
-        Ok(d) => print!("{d:?}"),
+        Ok(_) => println!("Clicking {selector}"),
         Err(e) => println!("{e:?}"),
     };
 }
@@ -20,7 +20,7 @@ pub async fn fill(page: &Client, selector: String, value: String) {
         )
         .await
     {
-        Ok(data) => println!("{data:?}"),
+        Ok(_) => println!("Filling {selector} with {value}"),
         Err(err) => println!("{err:?}"),
     };
 }
@@ -42,3 +42,24 @@ element.dispatchEvent(new Event('{event_name}'));
         Err(err) => println!("{err:?}"),
     };
 }
+
+pub async fn select_first(page: &Client, selector: String) {
+    let _ = match page
+        .execute(
+            &format!(
+                "
+let element = document.querySelector('{selector}');
+let opts = element.querySelectorAll('.options');
+opts[0].click();
+"
+            ),
+            vec![],
+        )
+        .await
+    {
+        Ok(data) => println!("Selecting the first option for {selector}"),
+        Err(err) => println!("{err:?}"),
+    };
+}
+
+pub async fn simulate_keyinput(page: &Client, value: String) {}
