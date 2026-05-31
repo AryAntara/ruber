@@ -14,3 +14,4 @@ pest = "2.7"
 pest_derive = "2.7"
 serde_yaml = "0.9.34"
 serde = "1.0.228"
+clap = { version = "4.5.31", features = ["derive"] }

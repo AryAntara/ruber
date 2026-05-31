@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-
 use crate::util::parser::{Rule, ScriptParser};
 use fantoccini::Client;
-use pest::Parser;
 use pest::iterators::Pairs;
+use pest::Parser;
+use std::collections::HashMap;
 
 mod dom;
 mod flow;
@@ -12,7 +11,6 @@ mod nav;
 #[derive(Debug, Clone)]
 pub struct Commander {
     pub flows: HashMap<String, Vec<Command>>,
-    pub state: HashMap<String, HashMap<String, String>>,
     pub commands: Vec<Command>,
     pub client: Client,
 }
@@ -20,15 +18,23 @@ pub struct Commander {
 #[derive(Debug, Clone)]
 pub enum Command {
     Goto(String),
+    Refresh,
+    Back,
     Flow(String, Vec<Command>),
     Click(String),
     TriggerEvent(String, String),
     Wait(u64, String),
+    WaitElement(String),
     Fill(String, String),
+    Clear(String),
+    Hover(String),
+    ScrollTo(String),
     CallFlow(String),
     SelectFirst(String),
     Hangup,
     PressKey(String),
+    Screenshot(String),
+    AssertText(String, String),
 }
 
 impl Commander {
@@ -39,7 +45,6 @@ impl Commander {
     ) -> Commander {
         Self {
             flows,
-            state: HashMap::new(),
             commands,
             client,
         }
@@ -58,133 +63,98 @@ impl Commander {
         let client = &self.client;
         match cmd {
             Command::Goto(url) => {
-                println!("We're going to {url}");
-                nav::go(url, &client).await
+                println!("🚀 Navigating to: {url}");
+                nav::go(url, client).await
+            }
+            Command::Refresh => {
+                println!("🔄 Refreshing page");
+                let _ = client.refresh().await;
+            }
+            Command::Back => {
+                println!("⬅️ Going back");
+                let _ = client.back().await;
             }
             Command::Flow(name, cmds) => {
-                let exists = self.flows.get(&name);
-                if exists.is_some() {
-                    println!("Flow \"{name}\" already exists");
-                    return;
-                }
-
-                println!("Creating new flow \"{name}\"");
-                let _ = &self.flows.insert(name, cmds);
+                println!("🏗️ Defining flow: {name}");
+                self.flows.entry(name).or_insert(cmds);
             }
             Command::CallFlow(name) => {
-                println!("Preparing for flow \"{name}\" and using it");
-                let cmds = self.flows.get(&name);
-                match cmds {
-                    Some(cmds) => {
-                        let mut little_commander =
-                            Commander::new(client.clone(), cmds.clone(), self.flows.clone());
-                        little_commander.exec().await;
-                    }
-                    None => {
-                        println!("Flow \"{name}\" not found");
-                    }
+                if let Some(cmds) = self.flows.get(&name).cloned() {
+                    println!("🔄 Calling flow: {name}");
+                    let mut runner = Commander::new(client.clone(), cmds, self.flows.clone());
+                    runner.exec().await;
+                } else {
+                    println!("⚠️ Flow not found: {name}");
                 }
             }
-            Command::Click(selector) => dom::click(&client, selector).await,
-            Command::TriggerEvent(event, selector) => {
-                dom::trigger_event(&client, event, selector).await
+            Command::Click(sel) => dom::click(client, sel).await,
+            Command::Fill(sel, val) => dom::fill(client, sel, val).await,
+            Command::Clear(sel) => dom::clear(client, sel).await,
+            Command::Hover(sel) => dom::hover(client, sel).await,
+            Command::ScrollTo(sel) => dom::scroll_to(client, sel).await,
+            Command::Wait(amt, unit) => {
+                println!("⏱️ Waiting: {amt} {unit}");
+                flow::wait_for(amt, unit).await
             }
-            Command::Wait(amount, unit) => {
-                println!("Waiting for {amount} {unit}");
-                flow::wait_for(amount, unit).await
+            Command::WaitElement(sel) => {
+                println!("🔍 Waiting for element: {sel}");
+                dom::wait_for_element(client, sel).await;
             }
-            Command::Fill(selector, value) => dom::fill(&client, selector, value).await,
-            Command::SelectFirst(selector) => dom::select_first(&client, selector).await,
-            Command::Hangup => {
-                flow::hangup().await;
-            }
-            Command::PressKey(value) => dom::simulate_keyinput(&client, value).await,
+            Command::TriggerEvent(ev, sel) => dom::trigger_event(client, ev, sel).await,
+            Command::SelectFirst(sel) => dom::select_first(client, sel).await,
+            Command::PressKey(val) => dom::simulate_keyinput(client, val).await,
+            Command::Screenshot(name) => dom::screenshot(client, name).await,
+            Command::AssertText(text, sel) => dom::assert_text(client, text, sel).await,
+            Command::Hangup => flow::hangup().await,
         };
     }
 }
 
 pub fn parse(cmd: &str) -> Option<Vec<Command>> {
-    let parsed = ScriptParser::parse(Rule::script, cmd);
-    match parsed {
-        Ok(mut pairs) => {
-            let commands = parse_command(pairs.next().unwrap().into_inner());
-            Some(commands)
-        }
-        Err(e) => {
-            eprintln!("❌ Syntax Error:\n{}", e);
-            None
-        }
-    }
+    ScriptParser::parse(Rule::script, cmd)
+        .map(|mut pairs| parse_command(pairs.next().unwrap().into_inner()))
+        .map_err(|e| eprintln!("❌ Syntax Error:\n{}", e))
+        .ok()
 }
 
 pub fn parse_command(pairs: Pairs<'_, Rule>) -> Vec<Command> {
-    let mut cmds: Vec<Command> = vec![];
-    for pair in pairs {
-        if pair.as_rule() == Rule::command {
-            let inner_cmd = pair.clone().into_inner().next().unwrap();
+    pairs
+        .filter(|p| p.as_rule() == Rule::command)
+        .map(|p| {
+            let inner = p.into_inner().next().unwrap();
+            let mut parts = inner.clone().into_inner().map(|i| clean(i.as_str()));
 
-            match inner_cmd.as_rule() {
-                Rule::CmdGoto => {
-                    let url = clean(inner_cmd.into_inner().next().unwrap().as_str());
-                    cmds.push(Command::Goto(url.to_string()));
-                }
-                Rule::CmdClick => {
-                    let selector = clean(inner_cmd.into_inner().next().unwrap().as_str());
-                    cmds.push(Command::Click(selector.to_string()));
-                }
-                Rule::CmdFill => {
-                    let mut inners = inner_cmd.into_inner();
-                    let selector = clean(inners.next().unwrap().as_str());
-                    let value = clean(inners.next().unwrap().as_str());
-                    cmds.push(Command::Fill(selector.to_string(), value.to_string()));
-                }
-                Rule::CmdWait => {
-                    let mut inners = inner_cmd.into_inner();
-                    let amount = clean(inners.next().unwrap().as_str());
-                    let unit = inners.next().unwrap().as_str();
-                    cmds.push(Command::Wait(amount.parse().unwrap(), unit.to_string()));
-                }
-                Rule::CmdTriggerEvent => {
-                    let mut inners = inner_cmd.into_inner();
-                    let event = inners.next().unwrap().as_str();
-                    let selector = inners.next().unwrap().as_str();
-                    cmds.push(Command::TriggerEvent(
-                        event.to_string(),
-                        selector.to_string(),
-                    ));
-                }
+            match inner.as_rule() {
+                Rule::CmdGoto => Command::Goto(parts.next().unwrap()),
+                Rule::CmdRefresh => Command::Refresh,
+                Rule::CmdBack => Command::Back,
+                Rule::CmdClick => Command::Click(parts.next().unwrap()),
+                Rule::CmdFill => Command::Fill(parts.next().unwrap(), parts.next().unwrap()),
+                Rule::CmdClear => Command::Clear(parts.next().unwrap()),
+                Rule::CmdHover => Command::Hover(parts.next().unwrap()),
+                Rule::CmdScrollTo => Command::ScrollTo(parts.next().unwrap()),
+                Rule::CmdWait => Command::Wait(parts.next().unwrap().parse().unwrap_or(0), parts.next().unwrap()),
+                Rule::CmdWaitElement => Command::WaitElement(parts.next().unwrap()),
+                Rule::CmdTriggerEvent => Command::TriggerEvent(parts.next().unwrap(), parts.next().unwrap()),
                 Rule::CmdFlowCreation => {
-                    let cmd: Vec<&str> = pair.as_str().split('\n').collect();
-                    let name = cmd[0]["create flow".len()..].trim();
-                    let blocks = inner_cmd.into_inner();
-                    let cmd = parse_command(blocks);
-                    cmds.push(Command::Flow(name.to_string(), cmd));
+                    let name = inner.as_str()["create flow".len()..].trim().split('\n').next().unwrap().to_string();
+                    Command::Flow(name, parse_command(inner.into_inner()))
                 }
-                Rule::CmdCallFlow => {
-                    let cmd: Vec<&str> = pair.as_str().split('\n').collect();
-                    let name = cmd[0]["using flow".len()..].trim();
-                    cmds.push(Command::CallFlow(name.to_string()));
+                Rule::CmdCallFlow => Command::CallFlow(inner.as_str()["using flow".len()..].trim().to_string()),
+                Rule::CmdSelectFirst => Command::SelectFirst(parts.next().unwrap()),
+                Rule::CmdPressKey => Command::PressKey(parts.next().unwrap()),
+                Rule::CmdScreenshot => Command::Screenshot(parts.next().unwrap()),
+                Rule::CmdAssertText => Command::AssertText(parts.next().unwrap(), parts.next().unwrap()),
+                Rule::CmdHangup => Command::Hangup,
+                _ => {
+                    println!("Unknown rule: {:?}", inner.as_rule());
+                    Command::Hangup
                 }
-                Rule::CmdSelectFirst => {
-                    let mut inners = inner_cmd.into_inner();
-                    let selector = clean(inners.next().unwrap().as_str());
-                    cmds.push(Command::SelectFirst(selector.to_string()))
-                }
-                Rule::CmdHangup => {
-                    cmds.push(Command::Hangup);
-                }
-                Rule::CmdPressKey => {
-                    let mut inners = inner_cmd.into_inner();
-                    let value = clean(inners.next().unwrap().as_str());
-                    cmds.push(Command::PressKey(value.to_string()));
-                }
-                _ => {}
             }
-        }
-    }
-    cmds
+        })
+        .collect()
 }
 
-fn clean(str: &str) -> String {
-    str.replace("'", "").replace('"', "")
+fn clean(s: &str) -> String {
+    s.trim_matches(|c| c == '\'' || c == '"').to_string()
 }

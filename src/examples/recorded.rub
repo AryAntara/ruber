@@ -1,0 +1,16 @@
+go to data:,
+go to https://app2.neomr.id/
+fill element '[name="email"]' with 'dokterkliniktest@neomr.id'
+click element '#login-password-visible'
+go to https://app2.neomr.id/main-menu?u=019bbf82-eab2-718c-b396-417546db0197
+go to https://app2.neomr.id/waiting-room/menu
+go to https://app2.neomr.id/waiting-room
+go to https://app2.neomr.id/waiting-room/menu
+click element '[aria-label="Buka tampilan waiting room otomatis"]'
+click element 'p.mt-1.text-sm.text-gray-600'
+click element 'p.mt-1.text-sm.text-gray-600'
+go to https://app2.neomr.id/main-menu
+go to https://app2.neomr.id/dashboard/user-statistic-visitation
+go to https://app2.neomr.id/dashboard/user-performance-report
+click element '#btn-export-pdf'
+hang up

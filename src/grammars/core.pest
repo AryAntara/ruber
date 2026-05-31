@@ -12,21 +12,37 @@ KindOfHTMLEvent = { "change"|"mouseenter"|"click" }
 // Mengabaikan komentar yang diawali dengan "--" sampai akhir baris
 COMMENT = _{ "--" ~ (!NEWLINE ~ ANY)* }
 
-// Perintah-perintah Browser (Sesuai contohmu)
-CmdGoto  = { "go to" ~ Url }
-CmdClick = { "click element" ~ String }
-CmdFill  = { "fill element" ~ String ~ "with" ~ String }
-CmdWait  = { "wait for" ~ String ~ KindOfTime }
+// Perintah-perintah Browser
+CmdGoto         = { "go to" ~ Url }
+CmdRefresh      = { "refresh page" }
+CmdBack         = { "go back" }
+CmdClick        = { "click element" ~ String }
+CmdFill         = { "fill element" ~ String ~ "with" ~ String }
+CmdClear        = { "clear element" ~ String }
+CmdHover        = { "hover element" ~ String }
+CmdScrollTo     = { "scroll to" ~ String }
+CmdWait         = { "wait for" ~ String ~ KindOfTime }
+CmdWaitElement  = { "wait for element" ~ String }
 CmdTriggerEvent = { "trigger" ~ KindOfHTMLEvent ~ "from" ~ String }
+CmdSelectFirst  = { "select first option for" ~ String }
+CmdPressKey     = { "press key" ~ String }
+CmdScreenshot   = { "take screenshot as" ~ String }
+CmdAssertText   = { "assert text" ~ String ~ "in" ~ String }
+
+// Flow control
 CmdFlowCreation = { "create flow" ~ ASCII_ALPHA+ ~ NEWLINE ~ (command ~ NEWLINE*)* ~ "stop" }
-CmdCallFlow = { "using flow" ~ ASCII_ALPHA+  }
-CmdSelectFirst = { "select first option for" ~ String }
-CmdHangup = { "hang up" }
-CmdIncludeFile = {"include" ~ String}
-CmdPressKey = { "press key" ~ String }
+CmdCallFlow     = { "using flow" ~ ASCII_ALPHA+  }
+CmdIncludeFile  = { "include" ~ String }
+CmdHangup       = { "hang up" }
 
 // Daftar semua command yang valid
-command = { CmdGoto | CmdClick | CmdFill | CmdWait | CmdTriggerEvent | CmdFlowCreation | CmdCallFlow | CmdSelectFirst | CmdHangup | CmdPressKey | CmdIncludeFile }
+command = { 
+    CmdGoto | CmdRefresh | CmdBack | 
+    CmdClick | CmdFill | CmdClear | CmdHover | CmdScrollTo |
+    CmdWait | CmdWaitElement | CmdTriggerEvent | CmdSelectFirst | CmdPressKey | 
+    CmdScreenshot | CmdAssertText |
+    CmdFlowCreation | CmdCallFlow | CmdIncludeFile | CmdHangup 
+}
 
 // Sebuah file script terdiri dari banyak command, dipisahkan oleh baris baru
 script = { SOI ~ (command ~ NEWLINE*)* ~ EOI }

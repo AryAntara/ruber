@@ -1,0 +1,15 @@
+go to data:,
+go to https://www.youtube.com/
+go to https://www.youtube.com/results?search_query=mpl
+fill element '[name="search_query"]' with 'mpl'
+go to https://www.youtube.com/@MPLIndonesia
+click element '#text'
+click element '[name="search_query"]'
+click element 'div.ytSpecTouchFeedbackShapeFill'
+go to https://www.youtube.com/results?search_query=aizo
+fill element '[name="search_query"]' with 'aizo'
+go to https://www.youtube.com/watch?v=zz2a9Q2Wru0&list=RDzz2a9Q2Wru0&start_radio=1
+click element '#metadata'
+click element '#skip-button:2'
+click element 'button.ytp-play-button.ytp-button.ytp-play-button-playlist'
+hang up
